@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Client</title>
+</head>
+<body>
+  <h1>Test Client</h1>
+  <button id="start">Start</button>
+  <button id="stop">Stop</button>
+  <p id="status">Bereit</p>
+
+  <script>
+    let ws;
+    let mediaRecorder;
+
+    document.getElementById("start").addEventListener("click", async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+      ws = new WebSocket("wss://" + window.location.host); // passt sich automatisch an die Domain an
+      ws.onopen = () => {
+        document.getElementById("status").textContent = "Verbunden";
+        mediaRecorder.start(250);
+      };
+
+      mediaRecorder.ondataavailable = event => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(event.data);
+        }
+      };
+    });
+
+    document.getElementById("stop").addEventListener("click", () => {
+      mediaRecorder.stop();
+      ws.close();
+      document.getElementById("status").textContent = "Getrennt";
+    });
+  </script>
+</body>
+</html>
